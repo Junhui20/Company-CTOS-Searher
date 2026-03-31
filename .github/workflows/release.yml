@@ -1,0 +1,88 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: CTOS-Scraper-Windows
+            zip_name: CTOS-Scraper-Windows.zip
+          - os: ubuntu-latest
+            artifact_name: CTOS-Scraper-Linux
+            zip_name: CTOS-Scraper-Linux.tar.gz
+          - os: macos-latest
+            artifact_name: CTOS-Scraper-macOS
+            zip_name: CTOS-Scraper-macOS.tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Linux needs system packages for tkinter
+      - name: Install tkinter (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: python build_exe.py
+
+      # Windows: zip
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/CTOS Scraper/*" -DestinationPath "${{ matrix.zip_name }}"
+
+      # Linux/macOS: tar.gz
+      - name: Package (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd dist
+          tar -czf "../${{ matrix.zip_name }}" "CTOS Scraper"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.zip_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/CTOS-Scraper-Windows/CTOS-Scraper-Windows.zip
+            artifacts/CTOS-Scraper-Linux/CTOS-Scraper-Linux.tar.gz
+            artifacts/CTOS-Scraper-macOS/CTOS-Scraper-macOS.tar.gz

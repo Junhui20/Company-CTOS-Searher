@@ -4,8 +4,18 @@ import json
 import threading
 
 import os
+import sys
 
-DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scrape_history.db")
+
+def _get_app_dir():
+    """Get the directory for app data files (works both in dev and as bundled exe)."""
+    if getattr(sys, 'frozen', False):
+        # Running as bundled exe - store DB next to the exe
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+DB_FILE = os.path.join(_get_app_dir(), "scrape_history.db")
 
 
 class TaskHistoryManager:
