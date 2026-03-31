@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -39,6 +40,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-tk
+
+      # macOS: install tcl-tk and link it for the setup-python build
+      - name: Install tkinter (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install python-tk@3.11
 
       - name: Install dependencies
         run: |
