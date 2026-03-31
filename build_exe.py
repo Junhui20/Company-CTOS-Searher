@@ -33,7 +33,6 @@ def build() -> None:
         "--onedir",
         "--windowed",
         "--name", "CTOS Scraper",
-        "--icon", "NONE",
         # Bundle customtkinter assets (themes, JSON files)
         "--add-data", add_data_arg(ctk_path, "customtkinter"),
         # Include app package
